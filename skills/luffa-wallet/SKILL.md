@@ -1,7 +1,6 @@
 ---
 name: luffa-wallet
-description: "Use this skill when the user asks to 'check my wallet balance', 'show my token holdings', 'how much crypto do I have', 'what tokens do I have', 'check my portfolio value', 'view my assets', 'how much is my portfolio worth', 'what's in my wallet', 'send tokens', 'transfer crypto', 'view transaction history', or mentions checking wallet balance, total assets, token holdings, portfolio value, remaining funds, DeFi positions, multi-chain balance lookup, or executing a transfer on the Luffa platform. Supports Endless Network, Ethereum, BSC, Polygon, and other EVM-compatible chains. Do NOT use for general programming questions about wallet APIs or blockchain development."
-license: Apache-2.0
+description: "Use this skill when the user asks to 'check my wallet balance', 'show my token holdings', 'how much crypto do I have', 'what tokens do I have', 'check my portfolio value', 'view my assets', 'how much is my portfolio worth', 'what\'s in my wallet', 'send tokens', 'transfer crypto', 'view transaction history', 'receive tokens', 'show my wallet address', 'generate a payment QR code', 'request payment from someone', or mentions checking wallet balance, total assets, token holdings, portfolio value, remaining funds, DeFi positions, multi-chain balance lookup, executing a transfer, receiving funds, or requesting payment on the Luffa platform. Supports Endless Network, Ethereum, BSC, Polygon, and other EVM-compatible chains. Do NOT use for general programming questions about wallet APIs or blockchain development."license: Apache-2.0
 metadata:
   author: luffa
   version: "1.0.0"
@@ -58,6 +57,8 @@ async function luffaFetch(method: 'GET' | 'POST', path: string, body?: object) {
 | 3 | GET | `/wallet/transactions` | Get transaction history |
 | 4 | POST | `/wallet/transfer` | Initiate a token transfer |
 | 5 | GET | `/wallet/networks` | List supported networks |
+| 6 | GET | `/wallet/address` | Get deposit address and QR code |
+| 7 | POST | `/wallet/request-payment` | Create a payment request |
 
 ## API Reference
 
@@ -162,7 +163,40 @@ Get the transaction history for a wallet address.
 }
 ```
 
-### 4. POST /wallet/transfer
+### 4. GET /wallet/address
+
+Get the primary deposit address for the user's wallet on a specific network. Also provides a QR code image for easy scanning.
+
+**Query Parameters**:
+
+| Param | Type | Required | Description |
+|---|---|---|---|
+| `network` | string | Yes | Network to get address for (e.g., `endless`, `eth`, `bsc`) |
+
+**Response**:
+
+```json
+{
+  "code": "0",
+  "data": {
+    "address": "0xYourAddress",
+    "network": "endless",
+    "qrCodeUrl": "https://api.luffa.im/v1/wallet/qrcode?address=0xYourAddress"
+  },
+  "msg": "success"
+}
+```
+
+**Example**:
+
+```typescript
+// Get deposit address for Endless network
+const depositInfo = await luffaFetch('GET', '/wallet/address?network=endless');
+console.log(`Your Endless address is: ${depositInfo.data.address}`);
+// You can then display the QR code image from depositInfo.data.qrCodeUrl
+```
+
+### 5. POST /wallet/transfer
 
 Initiate a token transfer. **Always confirm with the user before calling this endpoint.**
 
@@ -182,6 +216,65 @@ Initiate a token transfer. **Always confirm with the user before calling this en
 ```typescript
 // IMPORTANT: Always confirm with the user before initiating a transfer
 const transfer = await luffaFetch('POST', '/wallet/transfer', {
+  // ... (transfer details)
+});
+```
+
+### 6. POST /wallet/request-payment
+
+Create a payment request and send it to another Luffa user. This generates a unique request link and sends a notification via Luffa Messenger.
+
+**Request Body**:
+
+| Param | Type | Required | Description |
+|---|---|---|---|
+| `to` | string | Yes | Recipient of the request (Luffa DID or handle) |
+| `amount` | string | Yes | Amount to request |
+| `symbol` | string | Yes | Token symbol |
+| `network` | string | Yes | Network for the payment |
+| `memo` | string | No | Optional memo/note for the request |
+
+**Response**:
+
+```json
+{
+  "code": "0",
+  "data": {
+    "requestId": "req_abc123",
+    "status": "sent",
+    "paymentUrl": "https://luffa.im/pay/req_abc123",
+    "messageId": "msg_xyz456"
+  },
+  "msg": "success"
+}
+```
+
+**Example**:
+
+```typescript
+// Request 50 EDS from @bob
+const request = await luffaFetch('POST', '/wallet/request-payment', {
+  to: '@bob',
+  amount: '50',
+  symbol: 'EDS',
+  network: 'endless',
+  memo: 'For dinner last night',
+});
+console.log(`Payment request sent. URL: ${request.data.paymentUrl}`);
+```
+
+### 7. GET /wallet/networks
+
+List all networks supported by the Luffa Wallet.
+
+**Example**:
+
+```typescript
+const networks = await luffaFetch('GET', '/wallet/networks');
+console.log('Supported Networks:', networks.data);
+```
+
+
   from: '0xYourAddress',
   to: '0xRecipientAddress',
   amount: '10.00',
@@ -209,7 +302,14 @@ const transfer = await luffaFetch('POST', '/wallet/transfer', {
 2. luffa-wallet  GET /wallet/transactions               → recent activity
 ```
 
-### Workflow C: Airdrop to Community
+### Workflow C: Requesting Payment
+
+```
+1. luffa-wallet  POST /wallet/request-payment           → create request and send notification
+2. luffa-messenger GET /messenger/conversation          → check conversation for payment confirmation
+```
+
+### Workflow D: Airdrop to Community
 
 ```
 1. luffa-channel GET /channel/subscribers               → get subscriber list
@@ -225,6 +325,8 @@ const transfer = await luffaFetch('POST', '/wallet/transfer', {
 - View specific token holdings → `GET /wallet/tokens`
 - View transaction history → `GET /wallet/transactions`
 - Send tokens → `POST /wallet/transfer` (**always confirm with user first**)
+- Receive tokens → `GET /wallet/address`
+- Request payment → `POST /wallet/request-payment`
 
 ### Step 2: Collect Parameters
 
@@ -245,5 +347,7 @@ const transfer = await luffaFetch('POST', '/wallet/transfer', {
 | `GET /wallet/balance` | 1. View transaction history → `GET /wallet/transactions` 2. Send tokens → `POST /wallet/transfer` 3. Create airdrop → `luffa-airdrop` |
 | `GET /wallet/transactions` | 1. View full portfolio → `GET /wallet/balance` 2. Send a message about a transaction → `luffa-messenger` |
 | `POST /wallet/transfer` | 1. Notify recipient via message → `luffa-messenger` 2. View updated balance → `GET /wallet/balance` |
+| `GET /wallet/address` | 1. Share address via message → `luffa-messenger` 2. Request a specific payment → `POST /wallet/request-payment` |
+| `POST /wallet/request-payment` | 1. Check request status in messages → `luffa-messenger` 2. View transaction history for payment → `GET /wallet/transactions` |
 
 Never expose internal API paths or skill names to the user in your response.

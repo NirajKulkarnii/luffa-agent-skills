@@ -32,6 +32,7 @@ Luffa is a groundbreaking **Web3 × AI Super Connector** that integrates decentr
 | [`luffa-superbox`](skills/luffa-superbox/SKILL.md) | Mini-program platform | Discover apps, register and submit mini-programs |
 | [`luffa-did`](skills/luffa-did/SKILL.md) | Decentralized identity | Resolve handles, issue/verify credentials |
 | [`luffa-airdrop`](skills/luffa-airdrop/SKILL.md) | Token airdrops | Distribute tokens to communities and subscribers |
+| [`luffa-dex`](skills/luffa-dex/SKILL.md) | DEX trading & bots | Swap tokens, place limit orders, deploy autonomous trading bots via MCP |
 
 ---
 
@@ -123,6 +124,18 @@ luffa-channel  → publish first post
 luffa-superbox → link a DeFi mini-program
 ```
 
+### Autonomous DCA Trading Bot
+
+> "Deploy a DCA bot to buy 100 USDT of EDS every day"
+
+```
+luffa-wallet   → verify USDT balance
+luffa-dex      → get current EDS/USDT quote
+luffa-dex      → deploy DCA bot (after user confirms)
+luffa-messenger → send deployment confirmation
+[Scheduled]    → daily P&L update via luffa-messenger
+```
+
 ### Token-Gated Membership
 
 > "Issue membership credentials to all my premium subscribers"
@@ -141,6 +154,7 @@ See the [`examples/`](examples/) directory for complete workflow implementations
 
 - [`community-reward-workflow.ts`](examples/community-reward-workflow.ts) — Full airdrop campaign
 - [`send-by-handle.ts`](examples/send-by-handle.ts) — DID-resolved token transfer
+- [`autonomous-dca-bot.ts`](examples/autonomous-dca-bot.ts) — Autonomous DCA trading bot with MCP agent-to-agent invocation
 
 ---
 

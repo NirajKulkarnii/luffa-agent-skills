@@ -21,3 +21,18 @@ export type { LuffaConfig, LuffaResponse } from './client.js';
 
 export { WalletAPI, walletAPI } from './wallet.js';
 export type { TokenBalance, WalletBalance, Transaction, TransferRequest } from './wallet.js';
+
+export { DexAPI, dexAPI } from './dex.js';
+export type {
+  SwapQuote,
+  SwapResult,
+  LimitOrder,
+  BotStrategy,
+  BotStrategyType,
+  DCAStrategy,
+  GridStrategy,
+  TWAPStrategy,
+  ArbitrageStrategy,
+  TradingBot,
+  CreateBotRequest,
+} from './dex.js';
